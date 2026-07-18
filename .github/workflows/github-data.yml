@@ -1,0 +1,157 @@
+name: Fetch GitHub Data
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch contributions and pinned repos
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const username = 'NaMan6122';
+
+            // Fetch contribution data (last 52 weeks)
+            const from = new Date();
+            from.setFullYear(from.getFullYear() - 1);
+            const fromStr = from.toISOString().split('T')[0];
+            const toStr = new Date().toISOString().split('T')[0];
+
+            const contribQuery = `
+              query($username: String!, $from: DateTime!, $to: DateTime!) {
+                user(login: $username) {
+                  contributionsCollection(from: $from, to: $to) {
+                    contributionCalendar {
+                      totalContributions
+                      weeks {
+                        contributionDays {
+                          date
+                          contributionCount
+                        }
+                      }
+                    }
+                    currentStreak: contributionCalendar(
+                      first: 0
+                    ) {
+                      weeks {
+                        contributionDays {
+                          date
+                          contributionCount
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            let contributions = { weeks: [], totalContributions: 0 };
+            try {
+              const contribResult = await github.graphql(contribQuery, {
+                username,
+                from: fromStr + 'T00:00:00Z',
+                to: toStr + 'T23:59:59Z',
+              });
+              contributions = contribResult.user.contributionsCollection.contributionCalendar;
+            } catch (e) {
+              console.log('Contributions fetch failed:', e.message);
+            }
+
+            // Calculate streaks
+            const allDays = contributions.weeks.flatMap(w => w.contributionDays);
+            let currentStreak = 0;
+            let longestStreak = 0;
+            let tempStreak = 0;
+
+            // Current streak (from today backwards)
+            const today = new Date();
+            for (let i = 0; i < allDays.length; i++) {
+              const dayDate = new Date(allDays[allDays.length - 1 - i].date);
+              const diffDays = Math.floor((today - dayDate) / (1000 * 60 * 60 * 24));
+              if (diffDays <= currentStreak + 1 && allDays[allDays.length - 1 - i].contributionCount > 0) {
+                currentStreak++;
+              } else if (diffDays > currentStreak + 1) {
+                break;
+              }
+            }
+
+            // Longest streak
+            for (const day of allDays) {
+              if (day.contributionCount > 0) {
+                tempStreak++;
+                longestStreak = Math.max(longestStreak, tempStreak);
+              } else {
+                tempStreak = 0;
+              }
+            }
+
+            const contribData = {
+              totalContributions: contributions.totalContributions,
+              currentStreak,
+              longestStreak,
+              weeks: contributions.weeks
+            };
+
+            fs.writeFileSync('public/data/contributions.json', JSON.stringify(contribData, null, 2));
+
+            // Fetch pinned repos
+            const pinnedQuery = `
+              query($username: String!) {
+                user(login: $username) {
+                  pinnedItems(first: 6, types: REPOSITORY) {
+                    nodes {
+                      ... on Repository {
+                        name
+                        description
+                        url
+                        primaryLanguage {
+                          name
+                          color
+                        }
+                        stargazerCount
+                        forkCount
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            let pinnedRepos = [];
+            try {
+              const pinnedResult = await github.graphql(pinnedQuery, { username });
+              pinnedRepos = pinnedResult.user.pinnedItems.nodes.map(repo => ({
+                name: repo.name,
+                description: repo.description || '',
+                url: repo.url,
+                language: repo.primaryLanguage ? {
+                  name: repo.primaryLanguage.name,
+                  color: repo.primaryLanguage.color
+                } : null,
+                stars: repo.stargazerCount,
+                forks: repo.forkCount
+              }));
+            } catch (e) {
+              console.log('Pinned repos fetch failed:', e.message);
+            }
+
+            fs.writeFileSync('public/data/pinned.json', JSON.stringify(pinnedRepos, null, 2));
+            console.log(`Saved ${contribData.weeks.length} weeks of contributions and ${pinnedRepos.length} pinned repos`);
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/
+          git diff --staged --quiet || git commit -m "Update GitHub data [skip ci]"
+          git push
