@@ -1,0 +1,61 @@
+---
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Naman Gupta — Software Engineer & Astrophysics Enthusiast. Building in public." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --black: #000000;
+    --surface: #111111;
+    --surface-hover: #1a1a1a;
+    --border: #2a2a2a;
+    --border-hover: #3a3a3a;
+    --white: #ffffff;
+    --gray-100: #f5f5f5;
+    --gray-300: #a0a0a0;
+    --gray-500: #666666;
+    --gray-700: #333333;
+    --accent: #ffffff;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --gap: 10px;
+  }
+
+  html { scroll-behavior: smooth; }
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--black);
+    color: var(--white);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-700); border-radius: 4px; }
+</style>
