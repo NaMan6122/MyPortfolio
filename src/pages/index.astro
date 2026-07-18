@@ -3,6 +3,15 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="Naman Gupta — Software Engineer & Astrophysics Enthusiast">
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-content">
+      <div class="loading-logo">NG</div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <div class="loading-text">initializing...</div>
+    </div>
+  </div>
+
   <!-- Background Canvas -->
   <canvas id="bg-canvas"></canvas>
 
@@ -20,6 +29,25 @@ import Layout from '../layouts/Layout.astro';
     <button class="bg-btn" data-bg="stars" title="Stars">★</button>
     <button class="bg-btn" data-bg="geometry" title="Geometry">◇</button>
     <button class="bg-btn" data-bg="matrix" title="Matrix">⌨</button>
+  </div>
+
+  <!-- Project Preview Tooltip -->
+  <div class="project-preview" id="projectPreview">
+    <div class="project-preview-window">
+      <div class="preview-titlebar">
+        <span class="preview-dot r"></span>
+        <span class="preview-dot y"></span>
+        <span class="preview-dot g"></span>
+        <span class="preview-url" id="previewUrl"></span>
+      </div>
+      <div class="preview-viewport">
+        <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>
+      </div>
+    </div>
+    <div class="preview-label">
+      <span class="preview-dot green"></span>
+      <span id="previewName">Loading preview...</span>
+    </div>
   </div>
 
   <!-- Grid Layout -->
@@ -333,6 +361,77 @@ import Layout from '../layouts/Layout.astro';
     // Bind hover sounds
     document.querySelectorAll('[data-hover-sound]').forEach(el => {
       el.addEventListener('mouseenter', () => SoundFX.play(el.getAttribute('data-hover-sound') || 'tick'));
+    });
+
+    // ========== PROJECT PREVIEW ==========
+    const preview = document.getElementById('projectPreview')!;
+    const previewIframe = document.getElementById('previewIframe') as HTMLIFrameElement;
+    const previewUrl = document.getElementById('previewUrl')!;
+    const previewName = document.getElementById('previewName')!;
+    let previewTimeout: ReturnType<typeof setTimeout>;
+    let scrollInterval: ReturnType<typeof setInterval>;
+    let currentPreviewUrl = '';
+
+    document.querySelectorAll('.project-row').forEach(row => {
+      row.addEventListener('mouseenter', (e: any) => {
+        const href = row.getAttribute('href');
+        const name = row.querySelector('.project-name')?.textContent;
+        if (!href) return;
+
+        // Set preview content
+        previewUrl.textContent = new URL(href).hostname;
+        previewName.textContent = `Preview: ${name}`;
+
+        // Position preview near cursor
+        const rect = row.getBoundingClientRect();
+        let left = rect.right + 16;
+        let top = rect.top;
+
+        // Keep within viewport
+        if (left + 480 > window.innerWidth) {
+          left = rect.left - 496;
+        }
+        if (top + 340 > window.innerHeight) {
+          top = window.innerHeight - 350;
+        }
+        if (top < 10) top = 10;
+
+        preview.style.left = left + 'px';
+        preview.style.top = top + 'px';
+
+        // Load iframe after delay
+        previewTimeout = setTimeout(() => {
+          if (currentPreviewUrl !== href) {
+            previewIframe.src = href;
+            currentPreviewUrl = href;
+          }
+          preview.classList.add('visible');
+
+          // Auto-scroll the iframe
+          clearInterval(scrollInterval);
+          scrollInterval = setInterval(() => {
+            try {
+              const iframeDoc = previewIframe.contentDocument || previewIframe.contentWindow?.document;
+              if (iframeDoc) {
+                const maxScroll = iframeDoc.documentElement.scrollHeight - iframeDoc.documentElement.clientHeight;
+                if (iframeDoc.documentElement.scrollTop >= maxScroll) {
+                  iframeDoc.documentElement.scrollTop = 0;
+                } else {
+                  iframeDoc.documentElement.scrollTop += 1;
+                }
+              }
+            } catch (e) {
+              // Cross-origin - can't scroll
+            }
+          }, 50);
+        }, 400);
+      });
+
+      row.addEventListener('mouseleave', () => {
+        clearTimeout(previewTimeout);
+        clearInterval(scrollInterval);
+        preview.classList.remove('visible');
+      });
     });
 
     // ========== CUSTOM CURSOR ==========
@@ -742,6 +841,89 @@ import Layout from '../layouts/Layout.astro';
     color: var(--white);
     border-color: var(--border-hover);
     background: var(--surface-hover);
+  }
+
+  /* Project Preview Tooltip */
+  .project-preview {
+    position: fixed;
+    width: 480px;
+    height: 340px;
+    pointer-events: none;
+    z-index: 15000;
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    filter: drop-shadow(0 24px 80px rgba(0,0,0,0.7));
+  }
+  .project-preview.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .project-preview-window {
+    width: 100%;
+    height: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-hover);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .preview-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .preview-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .preview-dot.r { background: #ff5f57; }
+  .preview-dot.y { background: #febc2e; }
+  .preview-dot.g { background: #28c840; }
+  .preview-dot.green { background: #22c55e; width: 5px; height: 5px; }
+  .preview-url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gray-500);
+    margin-left: 8px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .preview-viewport {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #fff;
+  }
+  .preview-viewport iframe {
+    width: 200%;
+    height: 200%;
+    border: none;
+    transform: scale(0.5);
+    transform-origin: top left;
+    pointer-events: none;
+  }
+  .preview-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gray-300);
+    margin-top: -30px;
+    position: relative;
+    z-index: 1;
+    border-radius: 0 0 10px 10px;
   }
 
   /* Layout */
