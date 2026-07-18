@@ -84,19 +84,19 @@ import Layout from '../layouts/Layout.astro';
       </p>
       <div class="github-stats">
         <div class="stat-box">
-          <div class="stat-number">27</div>
+          <div class="stat-number" data-count="27">0</div>
           <div class="stat-label">Repos</div>
         </div>
         <div class="stat-box">
-          <div class="stat-number">6</div>
+          <div class="stat-number" data-count="6">0</div>
           <div class="stat-label">Products</div>
         </div>
         <div class="stat-box">
-          <div class="stat-number">33</div>
+          <div class="stat-number" data-count="33">0</div>
           <div class="stat-label">Stars</div>
         </div>
         <div class="stat-box">
-          <div class="stat-number">1</div>
+          <div class="stat-number" data-count="1">0</div>
           <div class="stat-label">Year Exp</div>
         </div>
       </div>
@@ -279,11 +279,104 @@ import Layout from '../layouts/Layout.astro';
         <a href="https://x.com/HyveMindx1" target="_blank" class="cta-btn secondary magnetic" data-hover-sound="tick">DM on X</a>
       </div>
     </div>
+
+    <!-- Heatmap Card -->
+    <div class="card card-heatmap anim anim-d8">
+      <div class="card-label"><span class="label-dot"></span> Contributions</div>
+      <div class="heatmap-wrapper">
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div class="heatmap-legend">
+          <span class="heatmap-label">Less</span>
+          <span class="heatmap-level level-0"></span>
+          <span class="heatmap-level level-1"></span>
+          <span class="heatmap-level level-2"></span>
+          <span class="heatmap-level level-3"></span>
+          <span class="heatmap-level level-4"></span>
+          <span class="heatmap-label">More</span>
+        </div>
+      </div>
+      <div class="heatmap-total" id="heatmapTotal">Loading contributions...</div>
+    </div>
+
+    <!-- Pinned Repos Card -->
+    <div class="card card-pinned anim anim-d9">
+      <div class="card-label"><span class="label-dot"></span> Pinned Repos</div>
+      <div class="pinned-grid" id="pinnedGrid">
+        <div class="pinned-loading">Loading repos...</div>
+      </div>
+    </div>
+
+    <!-- Streak Widget -->
+    <div class="card card-streak anim anim-d11">
+      <div class="card-label"><span class="label-dot"></span> Streak</div>
+      <div class="streak-grid">
+        <div class="streak-stat">
+          <div class="streak-number" id="currentStreak">0</div>
+          <div class="streak-label">Current</div>
+        </div>
+        <div class="streak-stat">
+          <div class="streak-number" id="longestStreak">0</div>
+          <div class="streak-label">Longest</div>
+        </div>
+        <div class="streak-stat">
+          <div class="streak-number" id="totalContributions">0</div>
+          <div class="streak-label">This Year</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timezone Card -->
+    <div class="card card-timezone anim anim-d12">
+      <div class="card-label"><span class="label-dot"></span> Local Time</div>
+      <div class="tz-clock" id="tzClock">--:--:--</div>
+      <div class="tz-meta">
+        <span class="tz-zone" id="tzZone">--</span>
+        <span class="tz-offset" id="tzOffset">--</span>
+      </div>
+      <div class="tz-availability" id="tzAvailability">
+        <span class="tz-dot"></span>
+        <span>Loading...</span>
+      </div>
+    </div>
+
+    <!-- Interactive Terminal -->
+    <div class="card card-terminal anim anim-d10">
+      <div class="terminal-chrome">
+        <span class="preview-dot r"></span>
+        <span class="preview-dot y"></span>
+        <span class="preview-dot g"></span>
+        <span class="terminal-title">naman@portfolio ~ %</span>
+      </div>
+      <div class="terminal-body" id="terminalBody">
+        <div class="terminal-line-output">Type <span class="terminal-highlight">help</span> to see available commands.</div>
+      </div>
+      <div class="terminal-input-line">
+        <span class="terminal-prompt">$</span>
+        <input type="text" class="terminal-input" id="terminalInput" autocomplete="off" spellcheck="false" placeholder="enter a command..." />
+      </div>
+    </div>
   </div>
 
   <script>
     // Import Three.js
     import * as THREE from 'three';
+
+    // ========== LOADING SCREEN ==========
+    const loadingScreen = document.getElementById('loadingScreen')!;
+    const loadingFill = loadingScreen.querySelector('.loading-fill') as HTMLElement;
+    let loadProgress = 0;
+    const loadInterval = setInterval(() => {
+      loadProgress += Math.random() * 15 + 5;
+      if (loadProgress >= 100) {
+        loadProgress = 100;
+        loadingFill.style.width = '100%';
+        clearInterval(loadInterval);
+        setTimeout(() => loadingScreen.classList.add('hidden'), 200);
+        setTimeout(() => loadingScreen.remove(), 700);
+      } else {
+        loadingFill.style.width = loadProgress + '%';
+      }
+    }, 100);
 
     // ========== SOUND EFFECTS ==========
     const SoundFX = (() => {
@@ -479,6 +572,290 @@ import Layout from '../layouts/Layout.astro';
         card.style.transform = '';
       });
     });
+
+    // ========== SCROLL ANIMATIONS ==========
+    const animObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          animObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.anim').forEach(el => animObserver.observe(el));
+
+    // ========== STAT COUNTERS ==========
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target as HTMLElement;
+          const target = parseInt(el.dataset.count || '0', 10);
+          const duration = 1200;
+          const start = performance.now();
+          const animate = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = String(Math.round(eased * target));
+            if (progress < 1) requestAnimationFrame(animate);
+          };
+          requestAnimationFrame(animate);
+          counterObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('.stat-number[data-count]').forEach(el => counterObserver.observe(el));
+
+    // ========== GITHUB DATA FETCHING ==========
+    async function fetchGitHubData() {
+      const cacheKey = 'portfolio-github-data';
+      const cached = localStorage.getItem(cacheKey);
+      const cacheTime = localStorage.getItem(cacheKey + '-time');
+      const oneDay = 24 * 60 * 60 * 1000;
+
+      if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < oneDay) {
+        return JSON.parse(cached);
+      }
+
+      try {
+        const [contribRes, pinnedRes] = await Promise.all([
+          fetch('/data/contributions.json'),
+          fetch('/data/pinned.json')
+        ]);
+        const data = {
+          contributions: await contribRes.json(),
+          pinned: await pinnedRes.json()
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        localStorage.setItem(cacheKey + '-time', String(Date.now()));
+        return data;
+      } catch (e) {
+        if (cached) return JSON.parse(cached);
+        return { contributions: { weeks: [], totalContributions: 0, currentStreak: 0, longestStreak: 0 }, pinned: [] };
+      }
+    }
+
+    // ========== HEATMAP ==========
+    async function renderHeatmap() {
+      const data = await fetchGitHubData();
+      const grid = document.getElementById('heatmapGrid')!;
+      const totalEl = document.getElementById('heatmapTotal')!;
+      const weeks = data.contributions.weeks;
+
+      grid.innerHTML = '';
+
+      if (weeks.length === 0) {
+        totalEl.textContent = 'No contribution data yet';
+        return;
+      }
+
+      // Build 7 rows × 52 cols grid
+      const allDays: { date: string; count: number }[] = [];
+      for (const week of weeks) {
+        for (const day of week.contributionDays) {
+          allDays.push({ date: day.date, count: day.contributionCount });
+        }
+      }
+
+      // Pad start if needed (first week might not start on Sunday)
+      const firstDate = new Date(allDays[0]?.date || Date.now());
+      const startDow = firstDate.getDay();
+      for (let i = 0; i < startDow; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell level-0';
+        grid.appendChild(cell);
+      }
+
+      for (const day of allDays) {
+        const cell = document.createElement('div');
+        const level = day.count === 0 ? 0 : day.count <= 3 ? 1 : day.count <= 6 ? 2 : day.count <= 9 ? 3 : 4;
+        cell.className = `heatmap-cell level-${level}`;
+        const dateObj = new Date(day.date);
+        const formatted = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        cell.setAttribute('data-tooltip', `${day.count} contributions on ${formatted}`);
+        grid.appendChild(cell);
+      }
+
+      totalEl.textContent = `${data.contributions.totalContributions} contributions in the last year`;
+    }
+
+    // ========== PINNED REPOS ==========
+    async function renderPinnedRepos() {
+      const data = await fetchGitHubData();
+      const grid = document.getElementById('pinnedGrid')!;
+
+      if (!data.pinned || data.pinned.length === 0) {
+        grid.innerHTML = '<div class="pinned-loading">No pinned repos available</div>';
+        return;
+      }
+
+      grid.innerHTML = data.pinned.map((repo: any) => `
+        <a href="${repo.url}" target="_blank" class="pinned-repo" data-hover-sound="tick">
+          <div class="pinned-repo-name">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            ${repo.name}
+          </div>
+          <div class="pinned-repo-desc">${repo.description || 'No description'}</div>
+          <div class="pinned-repo-meta">
+            ${repo.language ? `<span><span class="pinned-lang-dot" style="background:${repo.language.color}"></span> ${repo.language.name}</span>` : ''}
+            <span>★ ${repo.stars}</span>
+            <span>⑂ ${repo.forks}</span>
+          </div>
+        </a>
+      `).join('');
+
+      // Rebind hover sounds for new elements
+      grid.querySelectorAll('[data-hover-sound]').forEach(el => {
+        el.addEventListener('mouseenter', () => SoundFX.play(el.getAttribute('data-hover-sound') || 'tick'));
+      });
+    }
+
+    // ========== STREAK WIDGET ==========
+    async function renderStreak() {
+      const data = await fetchGitHubData();
+      const c = data.contributions;
+
+      const streakObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            animateValue('currentStreak', c.currentStreak);
+            animateValue('longestStreak', c.longestStreak);
+            animateValue('totalContributions', c.totalContributions);
+            streakObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.5 });
+
+      function animateValue(id: string, target: number) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const duration = 1000;
+        const start = performance.now();
+        const animate = (now: number) => {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = String(Math.round(eased * target));
+          if (progress < 1) requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+      }
+
+      const streakEl = document.querySelector('.card-streak');
+      if (streakEl) streakObserver.observe(streakEl);
+    }
+
+    // ========== TIMEZONE CLOCK ==========
+    function updateClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-US', { hour12: false });
+      const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const offset = -(now.getTimezoneOffset() / 60);
+      const sign = offset >= 0 ? '+' : '';
+      const hour = now.getHours();
+
+      document.getElementById('tzClock')!.textContent = time;
+      document.getElementById('tzZone')!.textContent = zone;
+      document.getElementById('tzOffset')!.textContent = `UTC${sign}${offset}`;
+
+      const available = hour >= 9 && hour < 18;
+      const availEl = document.getElementById('tzAvailability')!;
+      availEl.innerHTML = available
+        ? '<span class="tz-dot available"></span><span>Available for work</span>'
+        : '<span class="tz-dot unavailable"></span><span>Currently offline</span>';
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ========== INTERACTIVE TERMINAL ==========
+    const terminalCommands: Record<string, string> = {
+      help: `Available commands:
+  help     — Show this message
+  about    — About Naman
+  projects — List of projects
+  skills   — Technical skills
+  contact  — Contact information
+  clear    — Clear the terminal`,
+      about: 'Naman Gupta — Software Engineer at Siemens & indie builder. Obsessed with making AI tools that remember. Building Anvaya, an AI coding assistant with self-learning memory.',
+      projects: `Live projects:
+  • Anvaya — AI coding assistant with self-learning memory
+  • QuantaLLM — On-device LLM inference for Android
+  • Helmsman — Control your Mac from your phone
+
+In development:
+  • Weave — AI-native backlink exchange via MCP
+  • LaunchRelay — Reciprocal traffic for indie founders
+  • Noema — Experimental Rust project`,
+      skills: 'Rust, Go, TypeScript, Kotlin, Java, C++, Python, React, Node.js, SQLite, PostgreSQL, Docker, Linux, Git',
+      contact: `Email: namang2510@gmail.com
+X/Twitter: @HyveMindx1
+GitHub: github.com/NaMan6122
+LinkedIn: namangupta2510`
+    };
+
+    const terminalBody = document.getElementById('terminalBody')!;
+    const terminalInput = document.getElementById('terminalInput') as HTMLInputElement;
+    const commandHistory: string[] = [];
+    let historyIndex = -1;
+
+    terminalInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const cmd = terminalInput.value.trim().toLowerCase();
+        if (!cmd) return;
+
+        commandHistory.push(cmd);
+        historyIndex = commandHistory.length;
+
+        // Add command line
+        const cmdLine = document.createElement('div');
+        cmdLine.className = 'terminal-cmd-line';
+        cmdLine.innerHTML = `<span class="terminal-prompt">$</span> ${cmd}`;
+        terminalBody.appendChild(cmdLine);
+
+        // Process command
+        if (cmd === 'clear') {
+          terminalBody.innerHTML = '';
+        } else if (terminalCommands[cmd]) {
+          const response = document.createElement('div');
+          response.className = 'terminal-response';
+          response.textContent = terminalCommands[cmd];
+          terminalBody.appendChild(response);
+        } else {
+          const error = document.createElement('div');
+          error.className = 'terminal-error';
+          error.textContent = `command not found: ${cmd}. Type 'help' for available commands.`;
+          terminalBody.appendChild(error);
+        }
+
+        terminalInput.value = '';
+        terminalBody.scrollTop = terminalBody.scrollHeight;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (historyIndex > 0) {
+          historyIndex--;
+          terminalInput.value = commandHistory[historyIndex];
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (historyIndex < commandHistory.length - 1) {
+          historyIndex++;
+          terminalInput.value = commandHistory[historyIndex];
+        } else {
+          historyIndex = commandHistory.length;
+          terminalInput.value = '';
+        }
+      }
+    });
+
+    // Click terminal to focus input
+    document.querySelector('.card-terminal')?.addEventListener('click', () => {
+      terminalInput?.focus();
+    });
+
+    // Initialize all new features
+    renderHeatmap();
+    renderPinnedRepos();
+    renderStreak();
 
     // ========== SCROLL PROGRESS ==========
     window.addEventListener('scroll', () => {
@@ -712,12 +1089,22 @@ import Layout from '../layouts/Layout.astro';
 
     switchBg('particles');
 
+    // Restore saved background theme
+    const savedBg = localStorage.getItem('portfolio-bg');
+    if (savedBg && backgrounds[savedBg]) {
+      switchBg(savedBg);
+      document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[data-bg="${savedBg}"]`)?.classList.add('active');
+    }
+
     // Background switcher buttons
     document.querySelectorAll('.bg-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        switchBg(btn.getAttribute('data-bg')!);
+        const bgName = btn.getAttribute('data-bg')!;
+        switchBg(bgName);
+        localStorage.setItem('portfolio-bg', bgName);
         SoundFX.play('whoosh');
       });
     });
@@ -751,6 +1138,55 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <style>
+  /* Loading Screen */
+  .loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+  .loading-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .loading-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--white);
+  }
+  .loading-bar {
+    width: 160px;
+    height: 2px;
+    background: var(--gray-700);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loading-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--white);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .loading-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gray-500);
+  }
+
   /* Background Canvas */
   #bg-canvas {
     position: fixed;
@@ -928,19 +1364,20 @@ import Layout from '../layouts/Layout.astro';
 
   /* Layout */
   .wrapper {
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100dvh;
     padding: var(--gap);
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto auto;
     grid-template-areas:
-      "profile    about      works      works"
-      "tech       activity   social     social"
-      "cta        cta        cta        cta";
+      "profile    about       about       works       works"
+      "heatmap    pinned      pinned      works       works"
+      "tech       activity    social      social      streak"
+      "terminal   terminal    timezone    timezone    cta";
     gap: var(--gap);
     position: relative;
     z-index: 1;
+    align-content: start;
   }
 
   /* Card Base */
@@ -1182,17 +1619,16 @@ import Layout from '../layouts/Layout.astro';
   /* CTA Card */
   .card-cta {
     grid-area: cta;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 28px;
-    gap: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    gap: 12px;
   }
-  .cta-left { flex: 1; }
-  .cta-headline { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
-  .cta-sub { font-size: 13px; color: var(--gray-500); }
-  .cta-buttons { display: flex; gap: 10px; flex-shrink: 0; }
+  .cta-left { flex: 1; width: 100%; }
+  .cta-headline { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .cta-sub { font-size: 12px; color: var(--gray-500); line-height: 1.4; }
+  .cta-buttons { display: flex; gap: 8px; flex-shrink: 0; width: 100%; flex-direction: column; }
   .cta-btn {
     display: inline-flex;
     align-items: center;
@@ -1211,29 +1647,299 @@ import Layout from '../layouts/Layout.astro';
   .cta-btn.secondary { background: transparent; color: var(--gray-300); }
   .cta-btn.secondary:hover { background: var(--surface-hover); border-color: var(--gray-700); color: var(--white); transform: translateY(-1px); }
 
+  /* Heatmap Card */
+  .card-heatmap { grid-area: heatmap; min-height: 0; }
+  .heatmap-wrapper { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(52, 1fr);
+    grid-template-rows: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .heatmap-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: #161b22;
+    transition: transform 0.15s ease;
+    cursor: default;
+    position: relative;
+  }
+  .heatmap-cell:hover { transform: scale(1.8); z-index: 2; }
+  .heatmap-cell.level-0 { background: #161b22; }
+  .heatmap-cell.level-1 { background: #0e4429; }
+  .heatmap-cell.level-2 { background: #006d32; }
+  .heatmap-cell.level-3 { background: #26a641; }
+  .heatmap-cell.level-4 { background: #39d353; }
+  .heatmap-cell[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--gray-300);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    justify-content: flex-end;
+  }
+  .heatmap-level {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+  .heatmap-level.level-0 { background: #161b22; }
+  .heatmap-level.level-1 { background: #0e4429; }
+  .heatmap-level.level-2 { background: #006d32; }
+  .heatmap-level.level-3 { background: #26a641; }
+  .heatmap-level.level-4 { background: #39d353; }
+  .heatmap-label { font-size: 9px; color: var(--gray-700); }
+  .heatmap-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gray-500);
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  /* Pinned Repos Card */
+  .card-pinned { grid-area: pinned; min-height: 0; }
+  .pinned-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .pinned-grid::-webkit-scrollbar { display: none; }
+  .pinned-loading {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-500);
+    font-size: 12px;
+  }
+  .pinned-repo {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-decoration: none;
+    color: var(--white);
+    transition: border-color 0.2s, background 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .pinned-repo:hover { border-color: var(--border-hover); background: var(--surface-hover); }
+  .pinned-repo-name {
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pinned-repo-name svg { flex-shrink: 0; opacity: 0.5; }
+  .pinned-repo-desc {
+    font-size: 11px;
+    color: var(--gray-500);
+    line-height: 1.4;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .pinned-repo-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+    color: var(--gray-500);
+  }
+  .pinned-lang-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* Streak Widget */
+  .card-streak { grid-area: streak; min-height: 0; }
+  .streak-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    justify-content: center;
+  }
+  .streak-stat {
+    text-align: center;
+    padding: 8px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .streak-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+  }
+  .streak-label {
+    font-size: 9px;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+
+  /* Timezone Card */
+  .card-timezone { grid-area: timezone; min-height: 0; justify-content: center; align-items: center; text-align: center; }
+  .tz-clock {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(24px, 2.5vw, 36px);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .tz-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .tz-zone {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gray-300);
+  }
+  .tz-offset {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gray-500);
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+  }
+  .tz-availability {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--gray-500);
+  }
+  .tz-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gray-700);
+  }
+  .tz-dot.available { background: #22c55e; animation: pulse 2s ease-in-out infinite; }
+  .tz-dot.unavailable { background: var(--gray-500); }
+
+  /* Interactive Terminal */
+  .card-terminal { grid-area: terminal; min-height: 0; padding: 0; overflow: hidden; }
+  .terminal-chrome {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gray-500);
+    margin-left: 8px;
+  }
+  .terminal-body {
+    flex: 1;
+    padding: 12px 14px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    min-height: 100px;
+    max-height: 160px;
+  }
+  .terminal-body::-webkit-scrollbar { display: none; }
+  .terminal-line-output { color: var(--gray-300); }
+  .terminal-highlight { color: #22c55e; }
+  .terminal-cmd-line { color: var(--gray-300); }
+  .terminal-cmd-line .terminal-prompt { color: #22c55e; margin-right: 6px; }
+  .terminal-response { color: var(--gray-500); margin-top: 2px; white-space: pre-wrap; }
+  .terminal-error { color: #ef4444; }
+  .terminal-input-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+  .terminal-input-line .terminal-prompt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #22c55e;
+  }
+  .terminal-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--white);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    caret-color: #22c55e;
+  }
+  .terminal-input::placeholder { color: var(--gray-700); }
+
   /* Animations */
-  .anim { opacity: 0; transform: translateY(14px); animation: fadeUp 0.5s ease forwards; }
-  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-  .anim-d1 { animation-delay: 0.05s; }
-  .anim-d2 { animation-delay: 0.1s; }
-  .anim-d3 { animation-delay: 0.15s; }
-  .anim-d4 { animation-delay: 0.2s; }
-  .anim-d5 { animation-delay: 0.25s; }
-  .anim-d6 { animation-delay: 0.3s; }
-  .anim-d7 { animation-delay: 0.35s; }
+  .anim { opacity: 0; transform: translateY(14px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .anim.visible { opacity: 1; transform: translateY(0); }
+  .anim-d1 { transition-delay: 0.05s; }
+  .anim-d2 { transition-delay: 0.1s; }
+  .anim-d3 { transition-delay: 0.15s; }
+  .anim-d4 { transition-delay: 0.2s; }
+  .anim-d5 { transition-delay: 0.25s; }
+  .anim-d6 { transition-delay: 0.3s; }
+  .anim-d7 { transition-delay: 0.35s; }
+  .anim-d8 { transition-delay: 0.4s; }
+  .anim-d9 { transition-delay: 0.45s; }
+  .anim-d10 { transition-delay: 0.5s; }
+  .anim-d11 { transition-delay: 0.55s; }
+  .anim-d12 { transition-delay: 0.6s; }
 
   /* Responsive Tablet */
   @media (max-width: 1024px) {
     html, body { overflow: auto; }
     .wrapper {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       grid-template-rows: auto;
       grid-template-areas:
-        "profile    about"
-        "works      works"
-        "tech       activity"
-        "social     social"
-        "cta        cta";
+        "profile    about       works"
+        "heatmap    pinned      pinned"
+        "tech       activity    social"
+        "terminal   terminal    streak"
+        "timezone   timezone    cta";
       height: auto;
       min-height: 100vh;
       overflow-y: auto;
@@ -1241,6 +1947,7 @@ import Layout from '../layouts/Layout.astro';
       gap: 10px;
     }
     .bg-switcher { top: 10px; right: 10px; }
+    .pinned-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
   /* Responsive Mobile */
@@ -1254,7 +1961,8 @@ import Layout from '../layouts/Layout.astro';
       min-height: auto;
     }
     .card { padding: 16px; border-radius: var(--radius); }
-    .card-intro, .card-about, .card-projects, .card-tech, .card-now, .card-social, .card-cta {
+    .card-intro, .card-about, .card-projects, .card-tech, .card-now, .card-social, .card-cta,
+    .card-heatmap, .card-pinned, .card-streak, .card-timezone, .card-terminal {
       grid-column: 1;
       grid-row: auto;
     }
@@ -1267,10 +1975,15 @@ import Layout from '../layouts/Layout.astro';
     .cursor-dot, .cursor-ring { display: none; }
     .bg-switcher { top: 8px; right: 8px; }
     .bg-btn { width: 28px; height: 28px; font-size: 12px; }
+    .pinned-grid { grid-template-columns: 1fr; }
+    .heatmap-grid { grid-template-columns: repeat(26, 1fr); }
+    .terminal-body { min-height: 80px; max-height: 120px; }
+    .streak-number { font-size: 20px; }
+    .tz-clock { font-size: 24px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .anim { animation: none; opacity: 1; transform: none; }
+    .anim { transition: none; opacity: 1; transform: none; }
     .status-dot, .terminal-cursor { animation: none; }
     .cursor-dot, .cursor-ring { transition: none; }
   }
