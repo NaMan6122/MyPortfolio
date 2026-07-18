@@ -713,8 +713,10 @@ import Layout from '../layouts/Layout.astro';
     display: flex;
     gap: 6px;
     z-index: 10001;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: rgba(17, 17, 17, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius);
     padding: 6px;
   }
@@ -761,8 +763,10 @@ import Layout from '../layouts/Layout.astro';
 
   /* Card Base */
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: rgba(17, 17, 17, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius);
     padding: 24px;
     display: flex;
@@ -772,7 +776,7 @@ import Layout from '../layouts/Layout.astro';
     transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
   }
   .card:hover {
-    border-color: var(--border-hover);
+    border-color: rgba(255, 255, 255, 0.12);
   }
   .card::before {
     content: '';
@@ -1001,7 +1005,7 @@ import Layout from '../layouts/Layout.astro';
     justify-content: space-between;
     padding: 20px 28px;
     gap: 20px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
   .cta-left { flex: 1; }
   .cta-headline { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
