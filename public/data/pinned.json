@@ -1,41 +1,38 @@
 [
   {
-    "name": "fccMicroserviceAPIs",
-    "description": "Simple Backend APIs Serving Different Microservices",
-    "url": "https://github.com/NaMan6122/fccMicroserviceAPIs",
+    "name": "QuantaLLM-Releases",
+    "description": "QuantaLLM for Android — APK releases. Source code is proprietary.",
+    "url": "https://github.com/NaMan6122/QuantaLLM-Releases",
+    "language": null,
+    "stars": 1,
+    "forks": 0
+  },
+  {
+    "name": "QuantaWeb",
+    "description": "",
+    "url": "https://github.com/NaMan6122/QuantaWeb",
     "language": {
-      "name": "JavaScript",
-      "color": "#f1e05a"
+      "name": "TypeScript",
+      "color": "#3178c6"
+    },
+    "stars": 1,
+    "forks": 0
+  },
+  {
+    "name": "ChimerA",
+    "description": "",
+    "url": "https://github.com/NaMan6122/ChimerA",
+    "language": {
+      "name": "Go",
+      "color": "#00ADD8"
     },
     "stars": 0,
     "forks": 0
   },
   {
-    "name": "MySHopApp",
-    "description": "Basic Ecommerce Shopping Application.",
-    "url": "https://github.com/NaMan6122/MySHopApp",
-    "language": {
-      "name": "Dart",
-      "color": "#00B4AB"
-    },
-    "stars": 0,
-    "forks": 0
-  },
-  {
-    "name": "TicTacToe",
-    "description": "Simple TicTacToe android application using Java and XML.",
-    "url": "https://github.com/NaMan6122/TicTacToe",
-    "language": {
-      "name": "Java",
-      "color": "#b07219"
-    },
-    "stars": 0,
-    "forks": 0
-  },
-  {
-    "name": "ParseNode",
-    "description": "A Simple Node Based Tool to Parse XML based Layouts and Add / Remove any Type of Node While Preserving all Indents by Following Token-Stream Parsing Approach.",
-    "url": "https://github.com/NaMan6122/ParseNode",
+    "name": "helmsman-signal",
+    "description": "",
+    "url": "https://github.com/NaMan6122/helmsman-signal",
     "language": {
       "name": "TypeScript",
       "color": "#3178c6"
@@ -44,12 +41,12 @@
     "forks": 0
   },
   {
-    "name": "WatchTube-Backend",
-    "description": "Exploring and Practicing backend functionalities and production work.",
-    "url": "https://github.com/NaMan6122/WatchTube-Backend",
+    "name": "Weave",
+    "description": "",
+    "url": "https://github.com/NaMan6122/Weave",
     "language": {
-      "name": "JavaScript",
-      "color": "#f1e05a"
+      "name": "Python",
+      "color": "#3572A5"
     },
     "stars": 0,
     "forks": 0
