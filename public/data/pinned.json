@@ -20,13 +20,13 @@
   },
   {
     "name": "ChimerA",
-    "description": "",
+    "description": "💸 Two bills, one brain. Your chat subscriptions, served as one OpenAI-compatible API,  no keys, no per-token spend, ~1s browserless turns, native no-history agent harness.",
     "url": "https://github.com/NaMan6122/ChimerA",
     "language": {
       "name": "Go",
       "color": "#00ADD8"
     },
-    "stars": 1,
+    "stars": 4,
     "forks": 0
   },
   {
